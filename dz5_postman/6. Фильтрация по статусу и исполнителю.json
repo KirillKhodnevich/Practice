@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "title": "Реализовать аутентификацию",
+    "projectId": 1,
+    "status": "todo",
+    "createdAt": "1961-03-15T11:52:43.925Z",
+    "description": "Настроить JWT аутентификацию",
+    "assigneeId": 5,
+    "priority": "medium",
+    "updatedAt": "2017-05-10T15:24:59.356Z"
+  },
+  {
+    "id": 1,
+    "title": "Реализовать аутентификацию",
+    "projectId": 1,
+    "status": "todo",
+    "createdAt": "1969-08-20T12:28:10.480Z",
+    "description": "Настроить JWT аутентификацию",
+    "assigneeId": 5,
+    "priority": "medium",
+    "updatedAt": "2010-01-12T10:27:06.983Z"
+  }
+]
