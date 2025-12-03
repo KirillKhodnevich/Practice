@@ -1,0 +1,745 @@
+openapi: 3.0.4
+info:
+  title: Сервис управления проектами и задачами
+  version: 1.0.0
+  description: API для управления проектами и задачами.
+    Позволяет создавать проекты, назначать задачи, отслеживать статусы и генерировать отчеты.
+
+servers:
+  - url: http://localhost:3000/api
+    description: Локальный сервер разработки
+  - url: https://api.example.com/v1
+    description: Продакшен сервер
+
+tags:
+  - name: Проекты
+    description: Операции с проектами
+  - name: Задачи
+    description: Операции с задачами
+  - name: Комментарии
+    description: Управление комментариями
+  - name: Отчеты
+    description: Генерация отчетов
+
+paths:
+  /projects:
+    get:
+      tags: [Проекты]
+      summary: Получить список проектов
+      description: Возвращает список всех проектов с поддержкой пагинации.
+      parameters:
+        - in: query
+          name: page
+          schema: 
+            type: integer
+            default: 1
+            minimum: 1
+          description: Номер страницы для пагинации
+          example: 1
+        - in: query
+          name: limit  
+          schema: 
+            type: integer 
+            default: 20
+            maximum: 100
+          description: Количество проектов на странице
+          example: 20
+      responses:
+        '200':
+          description: Успешный ответ со списком проектов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+              examples:
+                success:
+                  summary: Список проектов
+                  value:
+                    - id: 1
+                      name: "Разработка нового API"
+                      description: "Создание системы управления проектами"
+                      createdAt: "2024-01-15T10:00:00Z"
+                      status: "active"
+                    - id: 2
+                      name: "Мобильное приложение"
+                      description: "Разработка iOS и Android приложения"
+                      createdAt: "2024-01-10T14:30:00Z"
+                      status: "active"
+        '400':
+          description: Неверные параметры запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errorCode: 400
+                message: "Неверные параметры пагинации"
+                details: "Параметр limit не может превышать 100"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errorCode: 500
+                message: "Внутренняя ошибка сервера"
+                details: "Произошла непредвиденная ошибка"
+
+    post:
+      tags: [Проекты]
+      summary: Создать новый проект
+      description: Создание проекта - основная функциональность сервиса.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+            examples:
+              typical:
+                summary: Типичный проект
+                value:
+                  name: "Новый проект"
+                  description: "Описание нового проекта"
+      responses:
+        '201':
+          description: Проект успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+              examples:
+                created:
+                  summary: Созданный проект
+                  value:
+                    id: 3
+                    name: "Новый проект"
+                    description: "Описание нового проекта"
+                    createdAt: "2024-01-20T09:15:00Z"
+                    status: "active"
+        '400':
+          description: Неверные входные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errorCode: 400
+                message: "Неверные данные проекта"
+                details: "Поле name является обязательным"
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{projectId}:
+    parameters:
+      - in: path
+        name: projectId
+        required: true
+        schema: 
+          type: integer
+          format: int64
+        description: Уникальный идентификатор проекта
+        example: 1
+    get:
+      tags: [Проекты]
+      summary: Получить проект по ID
+      responses:
+        '200':
+          description: Проект найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errorCode: 404
+                message: "Проект не найден"
+                details: "Проект с ID 999 не существует"
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{projectId}/tasks:
+    post:
+      tags: [Задачи]
+      summary: Добавить задачу в проект
+      description: Добавление задач в конкретный проект.
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: 
+            type: integer
+            format: int64
+          description: ID проекта, в который добавляется задача
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+            examples:
+              typical:
+                summary: Типичная задача
+                value:
+                  title: "Реализовать аутентификацию"
+                  description: "Настроить JWT аутентификацию для API"
+                  projectId: 1
+                  priority: "high"
+      responses:
+        '201':
+          description: Задача успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              examples:
+                created:
+                  summary: Созданная задача
+                  value:
+                    id: 1
+                    title: "Реализовать аутентификацию"
+                    description: "Настроить JWT аутентификацию для API"
+                    projectId: 1
+                    status: "todo"
+                    priority: "high"
+                    createdAt: "2024-01-20T10:00:00Z"
+                    updatedAt: "2024-01-20T10:00:00Z"
+        '400':
+          description: Неверные входные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/{taskId}/assign:
+    put:
+      tags: [Задачи]
+      summary: Назначение задачи пользователю
+      description: Назначение задачи конкретному пользователю.
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: 
+            type: integer
+            format: int64
+          description: ID задачи для назначения
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId:
+                  type: integer
+                  format: int64
+                  description: ID пользователя для назначения задачи
+            examples:
+              typical:
+                summary: Назначение пользователю
+                value:
+                  userId: 5
+      responses:
+        '200':
+          description: Задача успешно назначена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Неверные входные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Задача или пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errorCode: 404
+                message: "Ресурс не найден"
+                details: "Задача с ID 999 или пользователь с ID 5 не существуют"
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/{taskId}/status:
+    patch:
+      tags: [Задачи]
+      summary: Изменение статуса задачи
+      description: Обновление статуса выполнения задачи.
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: 
+            type: integer
+            format: int64
+          description: ID задачи для изменения статуса
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  $ref: '#/components/schemas/TaskStatus'
+            examples:
+              inProgress:
+                summary: Перевод в работу
+                value:
+                  status: "in_progress"
+      responses:
+        '200':
+          description: Статус успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Неверный статус
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                errorCode: 400
+                message: "Неверный статус"
+                details: "Статус 'invalid_status' не поддерживается"
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/{taskId}/comments:
+    post:
+      tags: [Комментарии]
+      summary: Добавить комментарий к задаче
+      description: Добавление комментария к конкретной задаче.
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema: 
+            type: integer
+            format: int64
+          description: ID задачи для комментирования
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+            examples:
+              typical:
+                summary: Типичный комментарий
+                value:
+                  content: "Начинаю работу над этой задачей"
+      responses:
+        '201':
+          description: Комментарий успешно добавлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+              examples:
+                created:
+                  summary: Созданный комментарий
+                  value:
+                    id: 1
+                    taskId: 1
+                    userId: 5
+                    user:
+                      id: 5
+                      name: "Иван Иванов"
+                      email: "ivan@example.com"
+                      role: "developer"
+                    content: "Начинаю работу над этой задачей"
+                    createdAt: "2024-01-20T11:00:00Z"
+        '400':
+          description: Неверные входные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks:
+    get:
+      tags: [Задачи]
+      summary: Фильтрация задач по статусу и исполнителю
+      description: Получение списка задач с фильтрацией по различным критериям.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+          description: Фильтр по статусу задачи
+          example: "in_progress"
+        - in: query
+          name: assigneeId
+          schema: 
+            type: integer
+            format: int64
+          description: Фильтр по ID исполнителя задачи
+          example: 5
+        - in: query
+          name: projectId
+          schema: 
+            type: integer
+            format: int64
+          description: Фильтр по ID проекта
+          example: 1
+      responses:
+        '200':
+          description: Список задач по фильтру
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '400':
+          description: Неверные параметры фильтрации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{projectId}/report:
+    get:
+      tags: [Отчеты]
+      summary: Получить отчет по выполнению проекта
+      description: Генерация отчета о прогрессе выполнения проекта.
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: 
+            type: integer
+            format: int64
+          description: ID проекта для генерации отчета
+          example: 1
+      responses:
+        '200':
+          description: Отчет по проекту
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectReport'
+              examples:
+                typical:
+                  summary: Типичный отчет
+                  value:
+                    projectId: 1
+                    projectName: "Разработка нового API"
+                    totalTasks: 10
+                    tasksByStatus:
+                      todo: 2
+                      in_progress: 5
+                      review: 2
+                      done: 1
+                    completionPercentage: 30.0
+        '404':
+          description: Проект не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Project:
+      type: object
+      required: [id, name, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор проекта
+          example: 1
+        name:
+          type: string
+          description: Название проекта
+          example: "Разработка нового API"
+        description:
+          type: string
+          description: Описание проекта
+          example: "Создание системы управления проектами"
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата и время создания проекта
+        status:
+          type: string
+          enum: [active, completed, archived]
+          default: active
+          description: Статус проекта
+
+    ProjectCreate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Название проекта
+          example: "Новый проект"
+        description:
+          type: string
+          description: Описание проекта
+          example: "Описание нового проекта"
+
+    Task:
+      type: object
+      required: [id, title, projectId, status, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор задачи
+          example: 1
+        title:
+          type: string
+          description: Заголовок задачи
+          example: "Реализовать аутентификацию"
+        description:
+          type: string
+          description: Подробное описание задачи
+          example: "Настроить JWT аутентификацию"
+        projectId:
+          type: integer
+          format: int64
+          description: ID проекта, к которому относится задача
+          example: 1
+        assigneeId:
+          type: integer
+          format: int64
+          description: ID назначенного пользователя
+          example: 5
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+          description: Приоритет задачи
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата и время создания задачи
+        updatedAt:
+          type: string
+          format: date-time
+          description: Дата и время последнего обновления задачи
+
+    TaskCreate:
+      type: object
+      required: [title, projectId]
+      properties:
+        title:
+          type: string
+          description: Заголовок задачи
+          example: "Новая задача"
+        description:
+          type: string
+          description: Подробное описание задачи
+          example: "Описание новой задачи"
+        projectId:
+          type: integer
+          format: int64
+          description: ID проекта для создания задачи
+          example: 1
+        priority:
+          type: string
+          enum: [low, medium, high]
+          default: medium
+          description: Приоритет задачи
+
+    TaskStatus:
+      type: string
+      enum: [todo, in_progress, review, done]
+      description: Статусы задачи
+      example: "todo"
+
+    User:
+      type: object
+      required: [id, name, email]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор пользователя
+          example: 1
+        name:
+          type: string
+          description: Имя пользователя
+          example: "Иван Иванов"
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+          example: "ivan@example.com"
+        role:
+          type: string
+          enum: [admin, manager, developer]
+          default: developer
+          description: Роль пользователя в системе
+
+    Comment:
+      type: object
+      required: [id, taskId, userId, content, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор комментария
+        taskId:
+          type: integer
+          format: int64
+          description: ID задачи, к которой относится комментарий
+        userId:
+          type: integer
+          format: int64
+          description: ID пользователя, оставившего комментарий
+        user:
+          $ref: '#/components/schemas/User'
+        content:
+          type: string
+          description: Текст комментария
+          example: "Это комментарий к задаче"
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата и время создания комментария
+
+    CommentCreate:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          description: Текст комментария
+          example: "Текст комментария"
+
+    ProjectReport:
+      type: object
+      properties:
+        projectId:
+          type: integer
+          format: int64
+          description: ID проекта
+        projectName:
+          type: string
+          description: Название проекта
+        totalTasks:
+          type: integer
+          description: Общее количество задач в проекте
+        tasksByStatus:
+          type: object
+          description: Количество задач по статусам
+          additionalProperties:
+            type: integer
+        completionPercentage:
+          type: number
+          format: float
+          description: Процент завершения проекта
+
+    Error:
+      type: object
+      properties:
+        errorCode:
+          type: integer
+          description: Код ошибки
+          example: 404
+        message:
+          type: string
+          description: Сообщение об ошибке
+          example: "Ресурс не найден"
+        details:
+          type: string
+          description: Детали ошибки
+          example: "Проект с ID 999 не существует"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен для аутентификации
+
+# Применяем security глобально
+security:
+  - bearerAuth: []
