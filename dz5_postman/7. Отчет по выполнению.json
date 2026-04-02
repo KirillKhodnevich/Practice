@@ -1,0 +1,12 @@
+{
+  "projectId": 1,
+  "projectName": "Разработка нового API",
+  "totalTasks": 10,
+  "tasksByStatus": {
+    "todo": 2,
+    "in_progress": 5,
+    "review": 2,
+    "done": 1
+  },
+  "completionPercentage": 30
+}

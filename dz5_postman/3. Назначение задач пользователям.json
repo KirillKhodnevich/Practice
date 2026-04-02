@@ -1,0 +1,11 @@
+{
+  "id": 1,
+  "title": "Реализовать аутентификацию",
+  "projectId": 1,
+  "status": "todo",
+  "createdAt": "1955-09-16T08:14:23.775Z",
+  "description": "Настроить JWT аутентификацию",
+  "assigneeId": 5,
+  "priority": "medium",
+  "updatedAt": "1956-12-07T23:21:21.357Z"
+}
